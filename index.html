@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSV Drag & Drop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="drop-area">Drag & drop your CSV file here</div>
+
+  <script>
+    // JavaScript to handle drag & drop and send CSV to backend
+    const dropArea = document.getElementById('drop-area');
+
+    // Highlight when dragging (costmetic only)
+    dropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropArea.classList.add('hover');
+    });
+
+    // Remove highlight when not dragging
+    dropArea.addEventListener('dragleave', () => {
+      dropArea.classList.remove('hover');
+    });
+
+    // Handle dropped files
+    dropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropArea.classList.remove('hover');
+
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+
+      if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+        alert("Please drop a valid CSV file!");
+        return;
+      }
+
+
+      // Send CSV to Python backend
+      const formData = new FormData();
+      formData.append("file", file);
+
+      fetch("http://127.0.0.1:5000/upload", {
+        method: "POST",
+        body: formData
+      })
+
+      // Error Handling catching
+      .then(response => response.json())
+      .then(data => { console.log(data); alert(`Server Response: ${data.message}, Rows: ${data.rows}`);})
+      .catch(error => { console.error("Error:", error); alert("Failed to upload CSV."); });
+    });
+  </script>
+
+</body>
+</html>
