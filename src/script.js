@@ -279,11 +279,36 @@ const carouselDots = document.querySelectorAll('.carousel-dot');
 let currentCardIndex = 0;
 const totalCards = cardWrappers.length;
 
+function isSmallScreenCarousel() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function scrollToCard(index) {
+  if (!cardsContainer || !cardWrappers[index]) return;
+
+  if (isSmallScreenCarousel()) {
+    // vertical snap
+    cardsContainer.scrollTo({
+      top: cardWrappers[index].offsetTop,
+      behavior: 'smooth'
+    });
+  } else {
+    // On larger layouts we show all 3 cards, so never transform.
+    cardWrappers.forEach((card) => {
+      card.style.transform = '';
+    });
+  }
+}
+
 function updateCarousel() {
-  // Move all cards
-  cardWrappers.forEach((card, index) => {
-    card.style.transform = `translateX(-${currentCardIndex * 100}%)`;
-  });
+  if (isSmallScreenCarousel()) {
+    scrollToCard(currentCardIndex);
+  } else {
+    // Ensure large layouts stay centered
+    cardWrappers.forEach((card) => {
+      card.style.transform = '';
+    });
+  }
   
   // Update dots
   carouselDots.forEach((dot, index) => {
@@ -324,6 +349,45 @@ carouselDots.forEach((dot, index) => {
   });
 });
 
+// Sync dots/arrows when user scrolls the vertical snap container
+if (cardsContainer) {
+  let scrollSyncT = null;
+  cardsContainer.addEventListener('scroll', () => {
+    if (!isSmallScreenCarousel()) return;
+    window.clearTimeout(scrollSyncT);
+    scrollSyncT = window.setTimeout(() => {
+      // find nearest card by scrollTop
+      const top = cardsContainer.scrollTop;
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      cardWrappers.forEach((cw, idx) => {
+        const d = Math.abs(cw.offsetTop - top);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = idx;
+        }
+      });
+      if (bestIdx !== currentCardIndex) {
+        currentCardIndex = bestIdx;
+        // only update UI state; don't re-scroll
+        carouselDots.forEach((dot, index) => {
+          dot.classList.toggle('active', index === currentCardIndex);
+        });
+        if (carouselPrev) carouselPrev.disabled = currentCardIndex === 0;
+        if (carouselNext) carouselNext.disabled = currentCardIndex === totalCards - 1;
+      }
+    }, 80);
+  });
+}
+
+// Ensure correct layout after resize / orientation change
+window.addEventListener('resize', () => {
+  if (!isSmallScreenCarousel()) {
+    currentCardIndex = 0;
+  }
+  updateCarousel();
+});
+
 // ==================== SCROLL INDICATORS ====================
 const scrollIndicators = document.querySelectorAll('.scroll-indicator');
 scrollIndicators.forEach((indicator, index) => {
@@ -347,4 +411,3 @@ if (backToTop) {
     });
   });
 }
-
