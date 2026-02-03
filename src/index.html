@@ -11,53 +11,68 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Fixed Coffee Button -->
-  <a href="coffee.html" class="coffee-btn-fixed" title="Buy me a coffee">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-      <line x1="6" y1="1" x2="6" y2="4"></line>
-      <line x1="10" y1="1" x2="10" y2="4"></line>
-      <line x1="14" y1="1" x2="14" y2="4"></line>
-    </svg>
-  </a>
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <a href="coffee.html" class="coffee-btn-fixed" title="Buy me a coffee">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+        <line x1="6" y1="1" x2="6" y2="4"></line>
+        <line x1="10" y1="1" x2="10" y2="4"></line>
+        <line x1="14" y1="1" x2="14" y2="4"></line>
+      </svg>
+    </a>
+  </nav>
 
   <main class="snap-container">
-    <!-- Section 1: Hero (White) -->
+    <!-- Section 1: Hero with Video Background -->
     <section class="section hero-section">
-      <div class="hero-content">
-        <div class="text-content">
-          <img src="logo.svg" alt="Messagebox logo" class="logo">
-          <h1 class="title">messagebox</h1>
-          <p class="subtitle">personal recommendation: <span class="accent">confirmed</span></p>
-        </div>
+      <!-- Video Background -->
+      <div class="video-background" id="videoBackground">
+        <div class="video-overlay"></div>
+        <iframe 
+          id="heroVideo"
+          src="https://www.youtube.com/embed/atOgj_ZaO7M?enablejsapi=1&controls=0&showinfo=0&rel=0&loop=1&playlist=atOgj_ZaO7M&mute=1&modestbranding=1"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+        <!-- Gradient overlays for Netflix effect -->
+        <div class="gradient-bottom"></div>
+        <div class="gradient-left"></div>
+      </div>
 
-        <!-- Value Proposition -->
-        <div class="value-prop">
-          <h2 class="headline">Get Movie Recommendations Instantly</h2>
-          <p class="description">Upload your watch history and receive personalized picks in seconds.</p>
+      <!-- Hero Content -->
+      <div class="hero-content">
+        <div class="hero-text">
+          <p class="tagline">PERSONALIZED FOR YOU</p>
+          <h1 class="hero-title">Get Movie Recommendations Instantly</h1>
+          <p class="hero-description">Upload your watch history and receive personalized picks in seconds. Discover your next favorite film.</p>
         </div>
 
         <!-- Upload Button -->
-        <button class="upload-btn" id="fileUpload" aria-label="Upload CSV file" tabindex="0">
-          <svg class="upload-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-          <span>Upload CSV File</span>
-        </button>
+        <div class="hero-actions">
+          <button class="upload-btn" id="fileUpload" aria-label="Upload CSV file" tabindex="0">
+            <svg class="upload-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Upload CSV File</span>
+          </button>
+          <p class="hover-hint" id="hoverHint">Hover anywhere to preview</p>
+        </div>
 
         <!-- Status Text -->
         <p class="status-text" id="statusText"></p>
+      </div>
 
-        <!-- Scroll Indicator -->
-        <div class="scroll-indicator">
-          <span>Scroll to learn more</span>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
+      <!-- Scroll Indicator -->
+      <div class="scroll-indicator">
+        <span>Scroll to learn more</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
       </div>
 
       <!-- Trust Signal -->
@@ -72,39 +87,19 @@
       </footer>
     </section>
 
-    <!-- Section 2: Video Tutorial (Dark) -->
+    <!-- Section 2: How It Works -->
     <section class="section tutorial-section">
       <div class="tutorial-content">
-        <!-- How It Works -->
-        <div class="how-it-works">
-          <h3 class="section-title">How it works</h3>
-          <div class="steps">
-            <div class="step">
-              <span class="step-number">1</span>
-              <span class="step-text">Upload your CSV file</span>
-            </div>
-            <div class="step">
-              <span class="step-number">2</span>
-              <span class="step-text">We analyze your ratings</span>
-            </div>
-            <div class="step">
-              <span class="step-number">3</span>
-              <span class="step-text">Get personalized recommendations</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Video Tutorial -->
         <div class="video-container">
           <video class="tutorial-video" controls poster="video-poster.jpg">
             <source src="videos/tutorial.mp4" type="video/mp4">
             Your browser does not support the video tag.
           </video>
-          <p class="video-caption">Watch: How to export your watch history</p>
         </div>
 
         <!-- Scroll Indicator -->
-        <div class="scroll-indicator scroll-indicator-dark">
+        <div class="scroll-indicator">
           <span>See example recommendations</span>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"></polyline>
@@ -113,7 +108,7 @@
       </div>
     </section>
 
-    <!-- Section 3: Example Recommendations (Dark) -->
+    <!-- Section 3: Example Recommendations -->
     <section class="section examples-section">
       <div class="examples-content">
         <h3 class="section-title">Example Recommendations</h3>
@@ -179,6 +174,25 @@
           </div>
         </div>
 
+        <!-- Carousel Navigation (visible on small screens) -->
+        <div class="carousel-nav">
+          <button class="carousel-arrow carousel-prev" aria-label="Previous card (up)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
+          <div class="carousel-dots">
+            <button class="carousel-dot active" data-index="0"></button>
+            <button class="carousel-dot" data-index="1"></button>
+            <button class="carousel-dot" data-index="2"></button>
+          </div>
+          <button class="carousel-arrow carousel-next" aria-label="Next card (down)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
         <!-- Back to top link -->
         <div class="back-to-top">
           <button class="text-btn" id="backToTop">
@@ -192,15 +206,42 @@
     </section>
   </main>
 
-  <!-- Star Glow Animation Overlay -->
+  <!-- Star Burst Animation Overlay -->
   <div class="star-animation-overlay" id="starAnimation">
-    <div class="star-glow">
-      <svg width="60" height="60" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="1">
+    <div class="star-burst">
+      <svg class="star star-center" width="80" height="80" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="0.5">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
       </svg>
+      <svg class="star star-1" width="30" height="30" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="0.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <svg class="star star-2" width="25" height="25" viewBox="0 0 24 24" fill="#FFC107" stroke="#FFC107" stroke-width="0.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <svg class="star star-3" width="20" height="20" viewBox="0 0 24 24" fill="#FFEB3B" stroke="#FFEB3B" stroke-width="0.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <svg class="star star-4" width="28" height="28" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="0.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <svg class="star star-5" width="22" height="22" viewBox="0 0 24 24" fill="#FFC107" stroke="#FFC107" stroke-width="0.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <svg class="star star-6" width="18" height="18" viewBox="0 0 24 24" fill="#FFEB3B" stroke="#FFEB3B" stroke-width="0.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <div class="sparkle sparkle-1"></div>
+      <div class="sparkle sparkle-2"></div>
+      <div class="sparkle sparkle-3"></div>
+      <div class="sparkle sparkle-4"></div>
+      <div class="sparkle sparkle-5"></div>
+      <div class="sparkle sparkle-6"></div>
+      <div class="sparkle sparkle-7"></div>
+      <div class="sparkle sparkle-8"></div>
     </div>
   </div>
 
   <script src="script.js"></script>
 </body>
 </html>
+
