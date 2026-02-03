@@ -30,26 +30,28 @@ if (darkModeToggle) {
 const cardsContainer = document.getElementById('cardsContainer');
 const starAnimation = document.getElementById('starAnimation');
 
-// Fetch movies from API and render cards
+// Fetch movies from Gemini recommendations endpoint (from parse_csv), fallback to /api/movies
 async function loadMovies() {
   try {
-    const response = await fetch('http://127.0.0.1:5000/api/movies');
+    // Fetch from /api/recommendations (Gemini results from parse_csv), not /api/movies
+    const response = await fetch('http://127.0.0.1:5000/api/recommendations');
     const data = await response.json();
-    
+
     if (data.movies && data.movies.length > 0) {
       renderMovieCards(data.movies);
     } else {
-      cardsContainer.innerHTML = '<p class="error-text">No recommendations found.</p>';
+      // No Gemini recommendations yet; fallback to sample movies
+      const fallback = await fetch('http://127.0.0.1:5000/api/movies');
+      const fallbackData = await fallback.json();
+      if (fallbackData.movies && fallbackData.movies.length > 0) {
+        renderMovieCards(fallbackData.movies);
+      } else {
+        cardsContainer.innerHTML = '<p class="error-text">No recommendations found. Upload a CSV to get recommendations.</p>';
+      }
     }
   } catch (error) {
     console.error('Error loading movies:', error);
-    // Fallback to sample data if API is not available
-    const fallbackMovies = [
-      { title: "The Dark Knight", director: "Christopher Nolan", year: "2008", image: "images/dark-knight.jpg" },
-      { title: "Interstellar", director: "Christopher Nolan", year: "2014", image: "images/interstellar.jpg" },
-      { title: "Oppenheimer", director: "Christopher Nolan", year: "2023", image: "images/oppenheimer.jpg" }
-    ];
-    renderMovieCards(fallbackMovies);
+    cardsContainer.innerHTML = '<p class="error-text">Could not load recommendations. Make sure the server is running.</p>';
   }
 }
 

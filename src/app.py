@@ -15,6 +15,9 @@ CORS(app)  # Enable CORS for frontend requests
 # Store clicked movies for future Google Gemini API integration
 clicked_movies = []
 
+# Latest 3 recommendations from Gemini (parse_csv); recommend page fetches from /api/recommendations
+latest_recommendations = []
+
 # Sample movie data (will be replaced by API data later)
 sample_movies = [
     {
@@ -235,6 +238,21 @@ def parse_csv(raw_file):
                 print(f"     Why: {why}", flush=True)
         print("-----------------------------\n", flush=True)
 
+        # Format like sample_movies; store in latest_recommendations (for /api/recommendations) and append to clicked_movies
+        global clicked_movies, latest_recommendations
+        formatted = [
+            {
+                "title": m.get("title", ""),
+                "director": m.get("director", ""),
+                "year": str(m.get("year", "")),
+                "image": "images/placeholder.jpg"
+            }
+            for m in recommendations
+        ]
+        latest_recommendations = formatted
+        for m in formatted:
+            clicked_movies.append(m)
+
     print("========== UPLOAD COMPLETE ==========\n", flush=True)
     return jsonify({
         'message': 'CSV uploaded and parsed successfully',
@@ -284,11 +302,22 @@ def get_clicked_movies():
     }), 200
 
 
+@app.route('/api/recommendations', methods=['GET'])
+def get_recommendations():
+    """Return latest 3 Gemini recommendations (from parse_csv). Recommend page fetches from here."""
+    movies = [
+        {**m, "image": m.get("image", "images/placeholder.jpg")}
+        for m in latest_recommendations
+    ]
+    return jsonify({
+        'movies': movies
+    }), 200
+
+
 @app.route('/api/movies', methods=['GET'])
 def get_movies():
     """
-    Return movie data for the recommendation page.
-    Currently returns sample data, will be replaced by API data.
+    Return sample movie data (fallback when no recommendations yet).
     """
     return jsonify({
         'movies': sample_movies
