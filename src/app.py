@@ -2,11 +2,19 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import csv
 import io
+import os
+
+import requests
+from dotenv import load_dotenv
 
 try:
     from gemini_client import ask_question as gemini_ask_question
 except Exception:
     gemini_ask_question = None  # e.g. ImportError or ValueError (missing API key)
+
+load_dotenv()
+
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
 app = Flask(__name__, template_folder='.', static_folder='.')
 CORS(app)  # Enable CORS for frontend requests
@@ -39,6 +47,44 @@ sample_movies = [
         "image": "images/oppenheimer.jpg"
     }
 ]
+
+_tmdb_poster_cache = {}
+
+
+def get_tmdb_poster_url(title: str, year: str | None = None) -> str | None:
+    """
+    Fetch poster URL from TMDb for a given title/year.
+    Returns None if TMDb key missing or poster not found.
+    """
+    if not TMDB_API_KEY:
+        return None
+
+    t = (title or "").strip()
+    y = (year or "").strip()
+    if not t:
+        return None
+
+    cache_key = (t.lower(), y)
+    if cache_key in _tmdb_poster_cache:
+        return _tmdb_poster_cache[cache_key]
+
+    params = {"api_key": TMDB_API_KEY, "query": t, "include_adult": "false"}
+    if y.isdigit():
+        params["year"] = y
+
+    try:
+        resp = requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=8)
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("results") or []
+        poster_path = results[0].get("poster_path") if results else None
+        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+        _tmdb_poster_cache[cache_key] = poster_url
+        return poster_url
+    except Exception as e:
+        print(f"[TMDb] Poster lookup failed for {t} ({y}): {e}", flush=True)
+        _tmdb_poster_cache[cache_key] = None
+        return None
 
 
 # ==================== API TEMPLATE FUNCTIONS ====================
@@ -245,7 +291,7 @@ def parse_csv(raw_file):
                 "title": m.get("title", ""),
                 "director": m.get("director", ""),
                 "year": str(m.get("year", "")),
-                "image": "images/placeholder.jpg"
+                "image": get_tmdb_poster_url(m.get("title", ""), str(m.get("year", ""))) or "logo.svg"
             }
             for m in recommendations
         ]
