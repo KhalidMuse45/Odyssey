@@ -12,10 +12,10 @@ const sample_movies = [
 // Load movies from API or use fallback
 async function loadMovies() {
   try {
-    const response = await fetch('http://127.0.0.1:5000/api/movies');
+    const response = await fetch('http://127.0.0.1:5000/api/recommendations');
     if (!response.ok) throw new Error('API not available');
-    const movies = await response.json();
-    renderMovieCards(movies);
+    const data = await response.json();
+    renderMovieCards(data.movies);
   } catch (error) {
     console.log('Using sample movies:', error);
     renderMovieCards(sample_movies);

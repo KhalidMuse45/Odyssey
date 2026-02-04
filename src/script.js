@@ -103,12 +103,20 @@ function handleFile(file) {
       body: formData
     })
     .then(response => {
-      if (!response.ok) {
-        throw new Error('Server error');
-      }
-      return response.json();
+      return response.json().then(data => ({
+        ok: response.ok,
+        status: response.status,
+        data: data
+      }));
     })
-    .then(data => {
+    .then(({ ok, status, data }) => {
+      if (!ok) {
+        const errorMsg = data.error || 'Server error';
+        if (errorMsg.includes("NO DATA IN CSV")) {
+          throw new Error('There\'s no data in this CSV file. Please use another file.');
+        }
+        throw new Error(errorMsg);
+      }
       console.log(data);
       setStatus(`Recommendations ready! Found ${data.rows} movies.`, "success");
       
@@ -118,7 +126,7 @@ function handleFile(file) {
     })
     .catch(error => {
       console.error("Error:", error);
-      setStatus("Failed to process file. Please try again.", "error");
+      setStatus(error.message || "Failed to process file. Please try again.", "error");
     })
     .finally(() => {
       dropArea.disabled = false;
