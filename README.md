@@ -58,7 +58,8 @@ The project is intentionally “no build step”: it’s plain HTML/CSS/JS serve
 │  ├─ recommend.css            # Recommend styles
 │  ├─ shared.css               # Shared animations/styles
 │  ├─ default_poster.svg       # Poster fallback
-│  ├─ logo.png                 # Current PNG favicon/logo
+│  ├─ logo.svg                 # App icon (used as favicon on main pages)
+│  ├─ logo.png                 # PNG logo (served by /favicon.png)
 │  ├─ movie_database_top250.json
 │  └─ ...
 ├─ requirements.txt
@@ -110,21 +111,29 @@ Then open:
 
 ## Running with Docker
 
-### Build
+These are the exact commands you can use to rebuild and run the container cleanly.
+
+### 1) Stop/remove any existing container
 
 ```bash
-docker build -t odyssey .
+docker rm -f messagebox 2>/dev/null || true
 ```
 
-### Run
-
-If you want to use a local env file:
+### 2) Build the image (no cache)
 
 ```bash
-docker run --rm -p 5000:5000 --env-file .env odyssey
+docker build --no-cache -t messagebox .
 ```
 
-Then open `http://localhost:5000/`.
+### 3) Run the container
+
+```bash
+docker run --rm --name messagebox -p 5001:5000 --env-file .env.docker messagebox
+```
+
+Notes:
+- **Port mapping**: `-p 5001:5000` means the app is available at `http://localhost:5001/`.
+- Your last command snippet ended with `messagebo` — the final argument should be the image name **`messagebox`**.
 
 ---
 
@@ -182,13 +191,13 @@ If the local pool can’t provide the full 80 fresh picks (because you’ve watc
 ### Super mode (Gemini-only + explainability)
 
 Super mode aims for deeper personalization and transparency:
-- Calls Gemini to produce **profiles**:
-  - `genreProfile`
-  - `actorProfile`
-  - `directorProfile`
-- Calls Gemini again to produce **recommendations** using those profiles.
+- Uses the uploaded watched CSV (plus likes/watchlist) as the only “taste source”.
+- Makes **one Gemini call per batch** that returns:
+  - `profiles` (for the mapping/radar chart)
+  - `movies` (exactly 50 items)
 
-**Gemini request size**: 200 (server returns 50 after filtering / posters)
+To keep Gemini responses stable (avoid truncation), the Super batch response is **compact**:
+- Each movie object only includes: `title`, `year`, `director`
 
 **Batch size delivered to UI**: 50
 
@@ -229,8 +238,9 @@ Backend routes are in `src/app.py`.
 - **POST** `/api/watchlist/remove`: remove a watchlist item
 
 ### Favicons
+- `index.html` and `recommend.html` currently reference `logo.svg` directly (with a cache-buster).
 - **GET** `/favicon.png`: served from `src/logo.png`
-- **GET** `/favicon.svg`: older SVG support / fallback
+- **GET** `/favicon.svg`: SVG route (fallback/legacy)
 
 ---
 
@@ -264,28 +274,6 @@ Security note:
 - Ensure `TMDB_API_KEY` is set.
 - The UI should still show `default_poster.svg` if a poster can’t be found.
 
-### Gemini returns invalid JSON / `/api/batch` fails
-Gemini can sometimes return JSON-like output with small syntax errors. Odyssey’s `_extract_json()` now:
-- extracts the JSON substring
-- repairs common issues (trailing commas, unquoted keys, single quotes)
-- retries parsing
-
 If it still fails, the server returns a **502** and you can retry.
 
-### Favicon not updating
-- Hard refresh (`Cmd+Shift+R`) or clear site data.
-- During dev, the server sets `Cache-Control: no-store` for HTML/JS/CSS and favicon assets.
-
----
-
-## Development notes
-
-- Static assets are served directly from `src/`.
-- There is no frontend bundler; edit files and refresh.
-
----
-
-## License
-
-Add your preferred license here.
 
