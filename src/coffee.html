@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support - Odyssey</title>
+  <link rel="icon" href="favicon.png?v=2" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #141414;
+      --panel: #1b1b1b;
+      --text: #ffffff;
+      --muted: rgba(255, 255, 255, 0.65);
+      --muted2: rgba(255, 255, 255, 0.45);
+      --border: rgba(255, 255, 255, 0.10);
+      --green: #1B5E20;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .back-link {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.75);
+      text-decoration: none;
+      border-radius: 10px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .back-link:hover {
+      color: #4CAF50;
+      background: rgba(76, 175, 80, 0.10);
+    }
+
+    .back-link svg { width: 22px; height: 22px; display: block; }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .panel {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .cashtag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 16px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(76, 175, 80, 0.25);
+      color: #9be29f;
+      background: rgba(27, 94, 32, 0.12);
+      user-select: all;
+    }
+
+    .actions {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 150px;
+    }
+
+    .btn:hover {
+      border-color: rgba(76, 175, 80, 0.35);
+      background: rgba(76, 175, 80, 0.08);
+      color: #b7f0bb;
+    }
+
+    .hint {
+      color: var(--muted2);
+      font-size: 13px;
+    }
+
+    .toast {
+      height: 18px;
+      font-size: 13px;
+      color: #9be29f;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 420px) {
+      h1 { font-size: 28px; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Back/Exit icon -->
+  <a href="index.html" class="back-link" title="Back to Odyssey">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </a>
+
+  <main class="container" aria-label="Support Odyssey">
+    <h1>Support Odyssey</h1>
+    <p>If you want to support the project, you can send a tip on Cash App.</p>
+
+    <section class="panel" aria-label="Cash App support">
+      <div class="cashtag" id="cashtag">$sunni134</div>
+
+      <div class="actions">
+        <button class="btn" id="copyBtn" type="button">Copy $cashtag</button>
+        <a class="btn" href="https://cash.app/$sunni134" target="_blank" rel="noopener noreferrer">Open Cash App</a>
+      </div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite">Copied.</div>
+      <div class="hint">Thanks for supporting.</div>
+    </section>
+  </main>
+
+  <script>
+    const copyBtn = document.getElementById('copyBtn');
+    const cashtagEl = document.getElementById('cashtag');
+    const toast = document.getElementById('toast');
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      window.clearTimeout(showToast._t);
+      showToast._t = window.setTimeout(() => toast.classList.remove('show'), 1200);
+    }
+
+    copyBtn.addEventListener('click', async () => {
+      const text = cashtagEl.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('Copied.');
+      } catch (e) {
+        showToast('Copy failed.');
+      }
+    });
+  </script>
+</body>
+</html>
