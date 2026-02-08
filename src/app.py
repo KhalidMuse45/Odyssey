@@ -372,10 +372,12 @@ def get_movies():
 
 @app.route('/', methods=['GET'])
 def index():
-    """Simple endpoint to check if server is running"""
-    return jsonify({'status': 'Flask server is running'}), 200
+    """ Serve the main index.html page """
+    return render_template('index.html')
+    # """Simple endpoint to check if server is running"""
+    # return jsonify({'status': 'Flask server is running'}), 200
 
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 1000))
+    port = int(os.getenv('PORT', 10000))
     app.run(debug=False, host='0.0.0.0', port=port)
