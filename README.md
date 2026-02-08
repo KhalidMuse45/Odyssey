@@ -36,10 +36,7 @@ The project is intentionally “no build step”: it’s plain HTML/CSS/JS serve
 
 <img width="1191" height="637" alt="Screenshot 2026-02-07 at 9 33 56 PM" src="https://github.com/user-attachments/assets/bc31e3e7-b1b6-4ad0-be8a-a420f0735c05" />
 
-<img width="414" height="632" alt="Screenshot 2026-02-07 at 9 34 24 PM" src="https://github.com/user-attachments/assets/e361a770-89a6-42ae-966a-51fc2d6e474d" />
-
 <img width="413" height="633" alt="Screenshot 2026-02-07 at 9 34 49 PM" src="https://github.com/user-attachments/assets/92740c45-9ada-4936-9b16-a84cd813eca6" />
----
 
 ## Tech stack
 
