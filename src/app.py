@@ -33,7 +33,40 @@ gemini_ask_question = None
 gemini_ask_recommendations = None
 
 
-load_dotenv()
+def _load_env_for_runtime() -> None:
+    """
+    Load environment variables in a deployment-friendly way.
+
+    Render tip:
+    - "Environment Variables" are injected automatically and need no .env file.
+    - "Secret Files" are typically available at /etc/secrets/<filename>.
+      If you store a dotenv-style file there, we'll try to load it.
+    """
+    explicit = os.getenv("DOTENV_PATH", "").strip()
+    candidates = [
+        explicit or None,
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.getcwd(), ".env.docker"),
+        "/etc/secrets/.env",
+        "/etc/secrets/.env.docker",
+    ]
+
+    for path in candidates:
+        if not path:
+            continue
+        try:
+            if os.path.exists(path):
+                load_dotenv(dotenv_path=path, override=False)
+                return
+        except Exception:
+            # Non-fatal: fall back to default behavior below
+            pass
+
+    # Default behavior: load from .env in current working directory (if present)
+    load_dotenv(override=False)
+
+
+_load_env_for_runtime()
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY", "").strip()
 
@@ -49,9 +82,34 @@ app = Flask(
 )
 
 # ======================
-# CORS (SIMPLIFIED)
+# CORS
 # ======================
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# NOTE:
+# - When `supports_credentials=True`, browsers will reject `Access-Control-Allow-Origin: *`
+#   for credentialed requests. Use an explicit allowlist instead.
+# - `flask-cors` supports regex-like origin patterns (strings) for convenience.
+def _parse_cors_origins(raw: str) -> list[str]:
+    """
+    Parse a comma-separated origin list from env, e.g.
+    CORS_ORIGINS="https://example.com, https://staging.example.com"
+    """
+    if not raw:
+        return []
+    parts = [p.strip() for p in raw.split(",")]
+    return [p for p in parts if p]
+
+
+_DEFAULT_CORS_ORIGINS: list[str] = [
+    # Local dev (any port)
+    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    # Production domains
+    r"^https?://(www\.)?odysrec\.com$",
+]
+
+_EXTRA_CORS_ORIGINS = _parse_cors_origins(os.getenv("CORS_ORIGINS", "").strip())
+_CORS_ORIGINS = _DEFAULT_CORS_ORIGINS + _EXTRA_CORS_ORIGINS
+
+CORS(app, resources={r"/*": {"origins": _CORS_ORIGINS}}, supports_credentials=True)
 
 
 @app.after_request
