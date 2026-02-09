@@ -1,21 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- ==========================================
+       Document metadata + global resources
+       ========================================== -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Odyssey - Movie Recommendations</title>
-  <link rel="icon" href="logo.svg?v=7" type="image/svg+xml">
-  <link rel="icon" href="logo.png?v=7" type="image/png">
-  <link rel="shortcut icon" href="favicon.ico?v=7">
+
+  <!-- Favicon(s)
+       - Browsers vary in which rel/type they prefer.
+       - Cache-buster (?v=8) helps avoid stale icons during iteration. -->
+  <link rel="icon" href="logo.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="logo.png?v=8" type="image/png">
+  <link rel="shortcut icon" href="favicon.ico?v=8">
+
+  <!-- Stylesheets
+       - shared.css: shared animations / variables / utilities
+       - style.css: landing page specific layout + hero styling -->
   <link rel="stylesheet" href="shared.css?v=1">
   <link rel="stylesheet" href="style.css?v=1">
+
+  <!-- Font loading (Inter)
+       preconnect reduces handshake latency for Google Fonts. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Top Navigation Bar -->
+  <!-- ==========================================
+       Top Navigation (always visible)
+       ========================================== -->
   <nav class="top-nav">
+    <!-- Fixed "Buy me a coffee" button (links to internal page) -->
     <a href="coffee.html" class="coffee-btn-fixed" title="Buy me a coffee">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
@@ -27,19 +44,26 @@
     </a>
   </nav>
 
+  <!-- Main scroll container (snap-scrolling sections) -->
   <main class="snap-container">
-    <!-- Section 1: Hero with Video Background -->
+    <!-- ==========================================
+         Section 1: Hero (video background + primary actions)
+         ========================================== -->
     <section class="section hero-section">
-      <!-- Video Background -->
+      <!-- Video Background
+           - Uses YouTube embed with enablejsapi=1 so `script.js` can start playback on hover.
+           - Muted + looped to behave like a "hero background". -->
       <div class="video-background" id="videoBackground">
         <div class="video-overlay"></div>
-        <iframe 
+        <video
           id="heroVideo"
-          src="https://www.youtube.com/embed/HDcZjSi3vwA?enablejsapi=1&controls=0&showinfo=0&rel=0&loop=1&playlist=HDcZjSi3vwA&mute=1&modestbranding=1"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
+          muted
+          loop
+          playsinline
+          preload="none"
+        >
+          <source data-src="https://pub-af2994809d6c49b1be8f1eb99c1669ec.r2.dev/8K%20HDR%20IMAX%20%20Thanos%20vs%20Avengers%20Fight%20Scene%20%20Avengers%20Endgame%20%20Dolby%205.1%20-%208K%20CINEMA%20(1080p%2C%20h264).mp4" type="video/mp4">
+        </video>
         <!-- Gradient overlays for Netflix effect -->
         <div class="gradient-bottom"></div>
         <div class="gradient-left"></div>
@@ -53,7 +77,10 @@
           <p class="hero-description">Upload your watch history and receive personalized picks in seconds. Discover your next favorite film.</p>
         </div>
 
-        <!-- Upload Button -->
+        <!-- Primary actions
+             - Upload CSV triggers the file picker + POST to `/upload` via `script.js`
+             - View Recommendations navigates to `recommend.html`
+             - Super toggle switches mode (stored in localStorage: `odyssey.mode`) -->
         <div class="hero-actions">
           <button class="upload-btn" id="fileUpload" aria-label="Upload CSV file" tabindex="0">
             <svg class="upload-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -78,7 +105,7 @@
           <p class="hover-hint" id="hoverHint">Hover anywhere to preview</p>
         </div>
 
-        <!-- Status Text -->
+        <!-- Inline status messages written by `script.js` (success/error/upload progress) -->
         <p class="status-text" id="statusText"></p>
       </div>
 
@@ -91,6 +118,7 @@
       </div>
 
       <!-- Trust Signal -->
+      <!-- Simple privacy reassurance copy (UI-only) -->
       <footer class="trust-footer">
         <p class="trust-text">
           <svg class="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -102,22 +130,26 @@
       </footer>
     </section>
 
-    <!-- Section 2: How It Works -->
+    <!-- ==========================================
+         Section 2: How it works (tutorial video)
+         ========================================== -->
     <section class="section tutorial-section">
-      <div class="tutorial-content">
-        <!-- Video Tutorial -->
-        <div class="video-container">
-          <iframe
-            class="tutorial-video"
-            src="https://www.youtube-nocookie.com/embed/Xg2EDtlRbB4"
-            title="Tutorial video"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen
-          ></iframe>
-        </div>
+      <div class="video-background tutorial-video-bg" id="tutorialVideoBackground">
+        <div class="video-overlay"></div>
+        <video
+          id="tutorialVideo"
+          muted
+          loop
+          playsinline
+          preload="metadata"
+        >
+          <source src="https://pub-af2994809d6c49b1be8f1eb99c1669ec.r2.dev/trailer/copy_8B9A3CE9-9FB6-4568-8B80-C83E6C3D3469.mov" type="video/quicktime">
+        </video>
+        <div class="gradient-bottom"></div>
+        <div class="gradient-left"></div>
+      </div>
 
+      <div class="tutorial-content">
         <!-- Scroll Indicator -->
         <div class="scroll-indicator">
           <span>See example recommendations</span>
@@ -128,7 +160,11 @@
       </div>
     </section>
 
-    <!-- Section 3: Example Recommendations -->
+    <!-- ==========================================
+         Section 3: Example Recommendations (static mock cards)
+         - These cards are purely presentational on the landing page.
+         - Real recommendations are generated/served on `recommend.html`.
+         ========================================== -->
     <section class="section examples-section">
       <div class="examples-content">
         <h3 class="section-title">Example Recommendations</h3>
@@ -194,7 +230,8 @@
           </div>
         </div>
 
-        <!-- Carousel Navigation (visible on small screens) -->
+        <!-- Carousel Navigation (visible on small screens)
+             - Buttons/dots are wired up in `script.js` for the landing-page demo. -->
         <div class="carousel-nav">
           <button class="carousel-arrow carousel-prev" aria-label="Previous card (up)">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -213,7 +250,7 @@
           </button>
         </div>
 
-        <!-- Back to top link -->
+        <!-- Back to top control (snaps back to hero section) -->
         <div class="back-to-top">
           <button class="text-btn" id="backToTop">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -226,7 +263,11 @@
     </section>
   </main>
 
-  <!-- Star Burst Animation Overlay -->
+  <!-- ==========================================
+       Star Burst Animation Overlay
+       - Used for satisfying feedback (e.g., "like"/favorite interactions).
+       - Kept outside <main> so it can overlay all sections.
+       ========================================== -->
   <div class="star-animation-overlay" id="starAnimation">
     <div class="star-burst">
       <svg class="star star-center" width="80" height="80" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="0.5">
@@ -261,6 +302,7 @@
     </div>
   </div>
 
+  <!-- Landing-page JS (YouTube hover play, CSV upload, demo carousel controls) -->
   <script src="script.js?v=1"></script>
 </body>
 </html>
