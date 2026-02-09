@@ -11,8 +11,10 @@ const counterSeenEl = document.getElementById('counter-seen');
 const counterLeftEl = document.getElementById('counter-left');
 const downloadWatchlistBtn = document.getElementById('downloadWatchlistBtn');
 const refreshBtn = document.getElementById('refreshBtn');
+const refreshBtnMobile = document.getElementById('refreshBtnMobile');
 let currentCardIndex = 0;
 let cardWrappers = [];
+const roundProgress = document.getElementById('roundProgress');
 
 // Loading overlay / placeholder
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -23,12 +25,13 @@ const openCashAppLink = document.getElementById('openCashAppLink');
 const supportToast = document.getElementById('supportToast');
 
 // Watch list UI
-const watchlistToggle = document.getElementById('watchlistToggle');
+const watchlistToggles = Array.from(document.querySelectorAll('[data-watchlist-toggle]'));
 const watchlistPanel = document.getElementById('watchlistPanel');
 const watchlistCloseBtn = document.getElementById('watchlistCloseBtn');
 const watchlistBody = document.getElementById('watchlistBody');
 const watchlistEmpty = document.getElementById('watchlistEmpty');
 const watchlistCountEl = document.getElementById('watchlistCount');
+const watchlistCountMobileEls = Array.from(document.querySelectorAll('.watchlist-count-mobile'));
 const modeStatus = document.getElementById('modeStatus');
 
 // Mapping (super mode)
@@ -152,6 +155,20 @@ function updateModeStatus() {
   const label = mode === 'super' ? 'Super' : 'Regular';
   modeStatus.textContent = isPlaceholderMode ? 'Demo • Round 0' : `${label} • Round ${currentRound}`;
   renderMappingUI();
+  updateRoundProgress();
+}
+
+function updateRoundProgress() {
+  if (!roundProgress) return;
+  const mode = getMode();
+  const show = mode === 'super' && !isPlaceholderMode;
+  roundProgress.style.display = show ? 'inline-flex' : 'none';
+  if (!show) return;
+  const totalRounds = 3;
+  const clamped = Math.max(1, Math.min(Number(currentRound) || 1, totalRounds));
+  roundProgress.querySelectorAll('.round-dot').forEach((dot, idx) => {
+    dot.classList.toggle('active', idx < clamped);
+  });
 }
 
 function topEntries(obj, n) {
@@ -418,6 +435,13 @@ function movieKey(movie) {
   return `${title}::${year}`;
 }
 
+function getMovieRating(movie) {
+  const raw = movie && (movie.rating ?? movie.score ?? movie.imdb_rating ?? movie.imdbRating);
+  if (raw === undefined || raw === null) return '';
+  const text = String(raw).trim();
+  return text;
+}
+
 function setLoading(active, { message = '', showRetry = false } = {}) {
   if (!loadingOverlay) return;
   if (active) applyRandomCashtag();
@@ -448,8 +472,9 @@ function getBatchSizeForMode() {
 }
 
 function updateWatchlistCount() {
-  if (!watchlistCountEl) return;
-  watchlistCountEl.textContent = String(Array.isArray(watchlist) ? watchlist.length : 0);
+  const count = String(Array.isArray(watchlist) ? watchlist.length : 0);
+  if (watchlistCountEl) watchlistCountEl.textContent = count;
+  watchlistCountMobileEls.forEach((el) => { el.textContent = count; });
 }
 
 function escapeCsv(value) {
@@ -458,21 +483,24 @@ function escapeCsv(value) {
   return s;
 }
 
-function downloadWatchlistCsv() {
+async function downloadWatchlistCsv() {
   const rows = Array.isArray(watchlist) ? watchlist : [];
-  const header = ['title', 'year', 'director', 'poster_url'];
-  const lines = [header.join(',')];
-  for (const m of rows) {
-    lines.push([
+  const header = ['title', 'rating', 'year'];
+  const parts = [`${header.join(',')}\n`];
+  const chunkSize = 250;
+  for (let i = 0; i < rows.length; i++) {
+    const m = rows[i];
+    parts.push([
       escapeCsv(m && m.title ? m.title : ''),
+      escapeCsv(m && m.rating ? m.rating : ''),
       escapeCsv(m && m.year ? m.year : ''),
-      escapeCsv(m && m.director ? m.director : ''),
-      escapeCsv(m && m.image ? m.image : ''),
-    ].join(','));
+    ].join(',') + '\n');
+    if (i > 0 && i % chunkSize === 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    }
   }
 
-  const csv = lines.join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(parts, { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const d = new Date();
@@ -489,7 +517,7 @@ function toggleWatchlist(open) {
   if (!watchlistPanel) return;
   const shouldOpen = typeof open === 'boolean' ? open : !watchlistPanel.classList.contains('open');
   watchlistPanel.classList.toggle('open', shouldOpen);
-  if (watchlistToggle) watchlistToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  watchlistToggles.forEach((btn) => btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false'));
 }
 
 function preloadOnePoster(url) {
@@ -508,6 +536,7 @@ function renderWatchlistItem(movie) {
   const title = movie && movie.title ? String(movie.title) : '';
   const year = movie && movie.year ? String(movie.year) : '';
   const director = movie && movie.director ? String(movie.director) : '';
+    const rating = getMovieRating(movie);
   const image = movie && movie.image ? String(movie.image) : '';
   preloadOnePoster(image);
 
@@ -533,7 +562,7 @@ function renderWatchlistItem(movie) {
   titleEl.textContent = `${title}${year ? ` (${year})` : ''}`;
   const subEl = document.createElement('div');
   subEl.className = 'wl-sub';
-  subEl.textContent = director || '';
+  subEl.textContent = [director, rating ? `Rating: ${rating}` : ''].filter(Boolean).join(' • ');
   meta.appendChild(titleEl);
   meta.appendChild(subEl);
 
@@ -603,6 +632,7 @@ function addToWatchlist(movie) {
     title: movie && movie.title ? String(movie.title) : '',
     year: movie && movie.year ? String(movie.year) : '',
     director: movie && movie.director ? String(movie.director) : '',
+    rating: getMovieRating(movie),
     image: movie && movie.image ? String(movie.image) : '',
   });
   renderWatchlistItem(movie);
@@ -702,35 +732,111 @@ async function fetchBatchIfNeeded() {
 }
 
 let batchFetchPromise = null;
+let prefetchedBatch = null;
+let prefetchPromise = null;
+const batchCache = new Map();
+const BATCH_CACHE_LIMIT = 3;
+
+function stableArrayKey(arr) {
+  return safeArray(arr).map((v) => String(v).trim()).filter(Boolean).join('|');
+}
+
+function compactExcludeKey(excludeKeys) {
+  const list = safeArray(excludeKeys);
+  const head = list.slice(0, 4).join('|');
+  const tail = list.slice(-4).join('|');
+  return `${list.length}:${head}:${tail}`;
+}
+
+function makeBatchCacheKey({ mode, likedTitles, excludeKeys }) {
+  return `${mode}::${stableArrayKey(likedTitles)}::${compactExcludeKey(excludeKeys)}`;
+}
+
+function cacheBatch(key, payload) {
+  if (!key || !payload) return;
+  if (batchCache.has(key)) batchCache.delete(key);
+  batchCache.set(key, payload);
+  if (batchCache.size > BATCH_CACHE_LIMIT) {
+    const first = batchCache.keys().next().value;
+    if (first) batchCache.delete(first);
+  }
+}
+
+async function requestBatch({ likedTitles, excludeKeys }) {
+  const mode = getMode();
+  const key = makeBatchCacheKey({ mode, likedTitles, excludeKeys });
+  if (batchCache.has(key)) return batchCache.get(key);
+
+  const response = await fetch(`${API_BASE}/api/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      batch_size: getBatchSizeForMode(),
+      mode,
+      liked_titles: likedTitles,
+      exclude_keys: excludeKeys,
+    }),
+  });
+
+  const json = await response.json().catch(() => null);
+  if (!response.ok) {
+    const msg = (json && json.error) ? String(json.error) : 'Batch fetch failed';
+    throw new Error(msg);
+  }
+
+  const payload = {
+    movies: (json && Array.isArray(json.movies)) ? json.movies : [],
+    profiles: json && json.profiles ? json.profiles : null,
+  };
+  cacheBatch(key, payload);
+  return payload;
+}
+
+function maybePrefetchNextBatch() {
+  if (getMode() !== 'super') return;
+  if (movieQueue.length > PREFETCH_WHEN_QUEUE_BELOW) return;
+  if (!likedThisBatch.length) return;
+  if (prefetchPromise) return;
+
+  const likedSnapshot = safeArray(likedThisBatch);
+  const excludeKeys = Array.from(seenMovieKeys);
+  const snapshotKey = makeBatchCacheKey({ mode: getMode(), likedTitles: likedSnapshot, excludeKeys });
+
+  prefetchPromise = requestBatch({ likedTitles: likedSnapshot, excludeKeys })
+    .then((payload) => {
+      const stillMatches = stableArrayKey(likedSnapshot) === stableArrayKey(likedThisBatch);
+      if (stillMatches && payload && payload.movies && payload.movies.length) {
+        prefetchedBatch = { key: snapshotKey, payload };
+        preloadPosters(payload.movies);
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      prefetchPromise = null;
+    });
+}
 async function fetchNextBatch() {
   if (batchFetchPromise) return batchFetchPromise;
 
   batchFetchPromise = (async () => {
     try {
     const exclude_keys = Array.from(seenMovieKeys);
-    const response = await fetch(`${API_BASE}/api/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        batch_size: getBatchSizeForMode(),
-        mode: getMode(),
-        liked_titles: likedPreviousBatch,
-        exclude_keys,
-      }),
-    });
+    const prefetchKey = makeBatchCacheKey({ mode: getMode(), likedTitles: likedPreviousBatch, excludeKeys: exclude_keys });
+    let payload = null;
 
-    const json = await response.json().catch(() => null);
-    const movies = json && Array.isArray(json.movies) ? json.movies : [];
-    if (json && json.profiles && getMode() === 'super') {
-      lastSuperProfiles = json.profiles;
-      superProfilesHistory = Array.isArray(superProfilesHistory) ? superProfilesHistory : [];
-      superProfilesHistory.push(json.profiles);
-      if (superProfilesHistory.length > 12) superProfilesHistory = superProfilesHistory.slice(-12);
+    if (prefetchedBatch && prefetchedBatch.key === prefetchKey) {
+      payload = prefetchedBatch.payload;
+      prefetchedBatch = null;
+    } else {
+      payload = await requestBatch({ likedTitles: likedPreviousBatch, excludeKeys: exclude_keys });
     }
 
-    if (!response.ok) {
-      const msg = (json && json.error) ? String(json.error) : 'Batch fetch failed';
-      throw new Error(msg);
+    const movies = payload && Array.isArray(payload.movies) ? payload.movies : [];
+    if (payload && payload.profiles && getMode() === 'super') {
+      lastSuperProfiles = payload.profiles;
+      superProfilesHistory = Array.isArray(superProfilesHistory) ? superProfilesHistory : [];
+      superProfilesHistory.push(payload.profiles);
+      if (superProfilesHistory.length > 12) superProfilesHistory = superProfilesHistory.slice(-12);
     }
 
     if (!movies.length) {
@@ -831,7 +937,8 @@ function initPlaceholders() {
 function renderMovieCards(movies, preserveIndex = 0) {
   cardsContainer.innerHTML = '';
   currentCardIndex = preserveIndex;
-  
+  const fragment = document.createDocumentFragment();
+
   movies.forEach((movie, index) => {
     const isLocked = Boolean(movie && movie.placeholder);
     const cardWrapper = document.createElement('div');
@@ -839,6 +946,8 @@ function renderMovieCards(movies, preserveIndex = 0) {
     cardWrapper.dataset.title = movie.title;
     cardWrapper.dataset.director = movie.director;
     cardWrapper.dataset.year = movie.year;
+    const titleLine = movie && movie.year ? `Title: ${movie.title} (${movie.year})` : `Title: ${movie.title}`;
+    const directorLine = movie && movie.director ? `Director: ${movie.director}` : 'Director:';
     
     cardWrapper.innerHTML = `
       <div class="product-card">
@@ -857,8 +966,8 @@ function renderMovieCards(movies, preserveIndex = 0) {
           ` : ''}
         </div>
         <div class="card-body">
-          <p class="card-title">Title: ${movie.title} (${movie.year})</p>
-          <p class="card-subtitle">Director: ${movie.director}</p>
+          <p class="card-title">${titleLine}</p>
+          <p class="card-subtitle">${directorLine}</p>
         </div>
       </div>
       <div class="card-action">
@@ -870,7 +979,7 @@ function renderMovieCards(movies, preserveIndex = 0) {
       </div>
     `;
     
-    cardsContainer.appendChild(cardWrapper);
+    fragment.appendChild(cardWrapper);
     
     // Add click handlers
     const productCard = cardWrapper.querySelector('.product-card');
@@ -902,6 +1011,8 @@ function renderMovieCards(movies, preserveIndex = 0) {
       favoriteBtn.classList.add('active');
     });
   });
+
+  cardsContainer.appendChild(fragment);
 
   // Setup carousel (small aspect ratio)
   cardWrappers = Array.from(cardsContainer.querySelectorAll('.card-wrapper'));
@@ -972,6 +1083,7 @@ async function handleLike(movie, cardWrapper, cardIndex, event) {
   const title = String(movie && movie.title ? movie.title : '').trim();
   if (title) likedThisBatch.push(title);
   saveRecommendState();
+  maybePrefetchNextBatch();
 
   // Fire-and-forget backend tracking (do not block animation)
   void trackMovieLike(movie).then((result) => {
@@ -1160,6 +1272,7 @@ async function advanceToNextSet(preserveIndex = 0) {
   displayedMovies = nextSet;
   updateCounterUI();
   saveRecommendState();
+  maybePrefetchNextBatch();
 
   // Flip-out all cards
   cardWrappers.forEach((cw) => cw.classList.add('is-flipping'));
@@ -1265,7 +1378,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Watch list panel toggles
-  if (watchlistToggle) watchlistToggle.addEventListener('click', () => toggleWatchlist());
+  watchlistToggles.forEach((btn) => btn.addEventListener('click', () => toggleWatchlist()));
   if (watchlistCloseBtn) watchlistCloseBtn.addEventListener('click', () => toggleWatchlist(false));
 
   // Mapping panel toggles (super mode only)
@@ -1294,10 +1407,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  if (refreshBtnMobile) {
+    refreshBtnMobile.addEventListener('click', async () => {
+      try {
+        await advanceToNextSet(0);
+      } catch (error) {
+        console.error(error);
+        window.alert('Failed to refresh recommendations.');
+      }
+    });
+  }
 });
 
 function isSmallScreenCarousel() {
-  return window.matchMedia('(max-width: 768px)').matches;
+  return window.matchMedia('(max-width: 1024px)').matches;
 }
 
 function scrollToCard(index) {

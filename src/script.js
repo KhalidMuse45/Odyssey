@@ -3,41 +3,80 @@ const videoBackground = document.getElementById('videoBackground');
 const heroVideo = document.getElementById('heroVideo');
 const heroSection = document.querySelector('.hero-section');
 const hoverHint = document.getElementById('hoverHint');
-let videoStarted = false;
+const tutorialVideoBackground = document.getElementById('tutorialVideoBackground');
+const tutorialVideo = document.getElementById('tutorialVideo');
+const tutorialSection = document.querySelector('.tutorial-section');
 
-// YouTube Player API
-let player;
+const HOVER_HINT_KEY = 'odyssey.hoverhint.dismissed';
 
-// Load YouTube IFrame API
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-// Called automatically when YouTube API is ready
-window.onYouTubeIframeAPIReady = function() {
-  player = new YT.Player('heroVideo', {
-    events: {
-      'onReady': onPlayerReady
+function initHoverHint(hintEl, storageKey) {
+  if (!hintEl) return;
+  try {
+    if (window.localStorage.getItem(storageKey) === 'true') {
+      hintEl.classList.add('dismissed');
     }
+  } catch (e) {}
+  hintEl.addEventListener('click', () => {
+    hintEl.classList.add('dismissed');
+    try { window.localStorage.setItem(storageKey, 'true'); } catch (e) {}
   });
-};
-
-function onPlayerReady(event) {
-  console.log('YouTube player ready');
 }
 
-// Start video on hover (toggle on - stays playing)
-heroSection.addEventListener('mouseenter', () => {
-  if (!videoStarted && player && player.playVideo) {
-    player.playVideo();
-    videoBackground.classList.add('playing');
-    videoStarted = true;
-    
-    if (hoverHint) {
-      hoverHint.classList.add('hidden');
+function initHoverVideo({ sectionEl, videoEl, backgroundEl, hintEl }) {
+  if (!sectionEl || !videoEl || !backgroundEl) return;
+  let started = false;
+  const sourceEl = videoEl.querySelector('source');
+  const hydrateSource = () => {
+    if (!sourceEl) return;
+    const dataSrc = sourceEl.getAttribute('data-src');
+    if (!dataSrc || sourceEl.getAttribute('src')) return;
+    sourceEl.setAttribute('src', dataSrc);
+    videoEl.load();
+  };
+
+  videoEl.muted = true;
+  videoEl.playsInline = true;
+
+  videoEl.addEventListener('play', () => {
+    backgroundEl.classList.add('playing');
+    if (hintEl) hintEl.classList.add('hidden');
+  });
+
+  const startPlayback = () => {
+    if (started) return;
+    hydrateSource();
+    const playAttempt = videoEl.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+      playAttempt.catch(() => {});
     }
+    started = true;
+  };
+
+  sectionEl.addEventListener('mouseenter', startPlayback);
+  sectionEl.addEventListener('touchstart', startPlayback, { passive: true });
+
+  // Warm the cache after initial render without blocking.
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => hydrateSource());
+  } else {
+    window.setTimeout(() => hydrateSource(), 1200);
   }
+}
+
+initHoverHint(hoverHint, HOVER_HINT_KEY);
+
+initHoverVideo({
+  sectionEl: heroSection,
+  videoEl: heroVideo,
+  backgroundEl: videoBackground,
+  hintEl: hoverHint,
+});
+
+initHoverVideo({
+  sectionEl: tutorialSection,
+  videoEl: tutorialVideo,
+  backgroundEl: tutorialVideoBackground,
+  hintEl: null,
 });
 
 // ==================== FILE UPLOAD ====================

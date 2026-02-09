@@ -2,7 +2,7 @@
 
 Odyssey is a lightweight movie recommendation web app. You upload your watch history (CSV), then swipe through recommendations in a **3-card carousel** with satisfying click/flip animations, a **persistent watchlist**, and two recommendation modes:
 
-- **Regular mode**: fast, mostly local recommendations (with a Gemini fallback when the local pool is exhausted).
+- **Regular mode**: local-first recommendations (optionally topped up by Gemini to fill a full batch).
 - **Super mode**: Gemini-powered recommendations with an explainable **mapping panel** (radar chart + matched genres/directors/actors).
 
 The project is intentionally “no build step”: it’s plain HTML/CSS/JS served by a small Flask app.
@@ -23,7 +23,7 @@ The project is intentionally “no build step”: it’s plain HTML/CSS/JS serve
 - Watchlist removal is supported.
 
 ### Modes
-- **Regular**: local recommender over a curated pool + optional Gemini fallback.
+- **Regular**: local recommender over a curated pool + optional Gemini top-up.
 - **Super**: Gemini-only picks + **mapping metrics** and an on-demand radar chart.
 
 ### Posters
@@ -58,7 +58,7 @@ The project is intentionally “no build step”: it’s plain HTML/CSS/JS serve
 │  ├─ recommend.css            # Recommend styles
 │  ├─ shared.css               # Shared animations/styles
 │  ├─ default_poster.svg       # Poster fallback
-│  ├─ logo.svg                 # App icon (used as favicon on main pages)
+│  ├─ logo.svg                 # App icon (used as favicon on index.html)
 │  ├─ logo.png                 # PNG logo (served by /favicon.png)
 │  ├─ movie_database_top250.json
 │  └─ ...
@@ -73,7 +73,7 @@ The project is intentionally “no build step”: it’s plain HTML/CSS/JS serve
 
 ### Prerequisites
 - Python **3.12+** recommended (Docker image uses 3.12)
-- A Gemini API key (for **Super mode**, and Regular fallback if enabled)
+- A Gemini API key (required for **Super mode**, optional for Regular top-up)
 - A TMDb API key (for posters)
 
 ### Install
@@ -173,33 +173,38 @@ When you like a movie:
 ### Regular mode (local-first)
 
 Regular mode is designed to be fast and consistent:
-- Uses a **local curated pool** derived from `movie_database_top250.json`
-- The loader applies filters:
-  - keeps only movies with `poster_url` starting with `http`
+- Uses a **local curated pool** from `movie_database_top250.json`.
+- The loader applies filters (see `src/recommender.py`):
   - keeps only “English-ish” (ASCII) titles
-  - sorts by `imdb_rating` and keeps the **Top 100** from that pool
-- The local recommender scores candidates based on your history and preferences.
+  - keeps only movies with `poster_url` starting with `http`
+  - sorts by `imdb_rating` and keeps the **Top 100** as the working pool
+- The backend builds a `watched_keys` set from your uploaded CSV and excludes:
+  - anything you’ve watched
+  - anything already shown this session (`exclude_keys`)
+  - anything you already liked (taste context)
+- Local scoring uses your history (and ratings when present) + optional preferences.
 
-**Batch size**: 80
+**Batch size target**: 80
 
-**Gemini fallback**:
-If the local pool can’t provide the full 80 fresh picks (because you’ve watched/seen most of them), the backend fills the remainder via Gemini using:
+Note: the local recommender currently caps its own output at **60** items; if Gemini is configured, the backend can fill the remainder to reach 80. If Gemini isn’t configured, Regular may return fewer than 80.
+
+**Gemini top-up (fill-only)**:
+If the backend can’t provide a full 80 fresh picks locally, it can **fill the remainder** via Gemini (if Gemini is configured) using:
 - watched CSV context
-- liked watchlist context
+- liked context (recent likes + persistent watchlist)
 - exclude list (seen titles)
 
 ### Super mode (Gemini-only + explainability)
 
 Super mode aims for deeper personalization and transparency:
-- Uses the uploaded watched CSV (plus likes/watchlist) as the only “taste source”.
-- Makes **one Gemini call per batch** that returns:
-  - `profiles` (for the mapping/radar chart)
-  - `movies` (exactly 50 items)
+- Uses the uploaded watched CSV (plus likes/watchlist) as the “taste source”.
+- Makes **one Gemini call per batch** and returns:
+  - `movies` (target 50, filtered server-side against watched + excluded)
+  - `profiles` (used by the mapping panel)
 
-To keep Gemini responses stable (avoid truncation), the Super batch response is **compact**:
-- Each movie object only includes: `title`, `year`, `director`
+**Batch size target delivered to UI**: 50
 
-**Batch size delivered to UI**: 50
+Note: the server filters Gemini results against watched titles + `exclude_keys`, so the response may contain fewer than 50 if many picks are duplicates/seen.
 
 **Mapping panel (right side)**:
 - Collapsible “Mapping” tab appears in Super mode.
@@ -228,6 +233,8 @@ Backend routes are in `src/app.py`.
     - `mode`: `"regular"` | `"super"`
     - `liked_titles`: `string[]`
     - `exclude_keys`: `string[]` (`"normalizedTitle::year"`)
+    - `preferredActors`: `string[]` (optional; regular only)
+    - `preferredDirectors`: `string[]` (optional; regular only)
 - **POST** `/api/refresh`: legacy “refresh all”
 - **GET** `/api/recommendations`: legacy “current list”
 
@@ -238,7 +245,8 @@ Backend routes are in `src/app.py`.
 - **POST** `/api/watchlist/remove`: remove a watchlist item
 
 ### Favicons
-- `index.html` and `recommend.html` currently reference `logo.svg` directly (with a cache-buster).
+- `index.html` sets its own favicon links (with a cache-buster).
+- `recommend.html` does not set a page-specific favicon (browser falls back to `/favicon.ico`).
 - **GET** `/favicon.png`: served from `src/logo.png`
 - **GET** `/favicon.svg`: SVG route (fallback/legacy)
 
@@ -256,7 +264,7 @@ Mode is stored in `localStorage`:
 
 ## Environment variables
 
-- **`GEMINI_API_KEY`**: required for Super mode and Regular fallback
+- **`GEMINI_API_KEY`**: required for Super mode; optional for Regular top-up
 - **`TMDB_API_KEY`**: required for poster lookup
 
 Security note:
@@ -274,28 +282,4 @@ Security note:
 - Ensure `TMDB_API_KEY` is set.
 - The UI should still show `default_poster.svg` if a poster can’t be found.
 
-### Gemini returns invalid JSON / `/api/batch` fails
-Gemini can sometimes return JSON-like output with small syntax errors. Odyssey’s `_extract_json()` now:
-- extracts the JSON substring
-- repairs common issues (trailing commas, unquoted keys, single quotes)
-- retries parsing
-
 If it still fails, the server returns a **502** and you can retry.
-
-### Favicon not updating
-- Hard refresh (`Cmd+Shift+R`) or clear site data.
-- During dev, the server sets `Cache-Control: no-store` for HTML/JS/CSS and favicon assets.
-
----
-
-## Development notes
-
-- Static assets are served directly from `src/`.
-- There is no frontend bundler; edit files and refresh.
-
----
-
-## License
-
-Add your preferred license here.
-
